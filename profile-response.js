@@ -3,7 +3,7 @@ var request = require('request');
 function returnProfileData() {
     request.post(
         {
-            url: 'http://localhost:3000/profile',
+            url: 'http://localhost:3000/login',
             json: {
                 firstName: "jonathan",
                 lastName: "espinosa",
