@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 app.use(bodyparser.urlencoded({extended: true}));
 app.use(bodyparser.json());
 
+//scheme/json structure for user profiles 
 let userSchema = new mongoose.Schema({
     firstName: String,
     lastName: String,
@@ -16,16 +17,21 @@ let userSchema = new mongoose.Schema({
     password: String
 });
 
+//set up connection to database, specify 'account' collection and userSchema to be used for these operations 
 const dbConnect = mongoose.createConnection('mongodb+srv://admin:admin123@cardgamecluster.k5l2m4b.mongodb.net/'.concat('Card_Game_Database'));
 const account = dbConnect.model('account', userSchema);
 
+//error if connection error
 dbConnect.on('error', () => {
     console.log(console, 'connection error')
 });
+
+//logs success message when connection successful
 dbConnect.on('open', () => {
     console.log('connection to database successful. Awaiting API calls')
 });
 
+//when API receives form info to 'createAccount' endpoint, a new profile is created in the database for it. it is logged in the console
 app.post('/createAccount', async(req, res) => {
     const accounts = await account.create ({
         firstName: req.body.firstName,
@@ -42,7 +48,8 @@ app.post('/createAccount', async(req, res) => {
     res.end();
 });
 
-
+//when a username and password is sent via form data to the 'login' endpoint, the database is queried for the associated account
+//profile info is sent to the card game application to be displayed, modified, etc 
 app.post('/login', async (req, res) => {
 
     const profile = await account.findOne({username: req.body.username, password: req.body.password}).exec();
