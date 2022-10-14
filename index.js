@@ -1,39 +1,34 @@
 const express = require('express');
 const app = express();
 const bodyparser = require('body-parser');
-const mongoose = require('mongoose');
+const database = require('./dbOperations.js');
 app.use(bodyparser.urlencoded({extended: true}));
 app.use(bodyparser.json());
 
-//scheme/json structure for user profiles 
-let userSchema = new mongoose.Schema({
-    firstName: String,
-    lastName: String,
-    profileID: String,
-    wins: String,
-    losses: String,
-    accountDate: String,
-    username: String,
-    password: String
+
+app.listen(8000, (err) => {
+    (err) ? console.log('error spinning up server') : console.log('waiting for requests on port 8000');
 });
 
-//set up connection to database, specify 'account' collection and userSchema to be used for these operations 
-const dbConnect = mongoose.createConnection('mongodb+srv://admin:admin123@cardgamecluster.k5l2m4b.mongodb.net/'.concat('Card_Game_Database'));
-const account = dbConnect.model('account', userSchema);
+app.post('/login', async (req, res) => {
 
-//error if connection error
-dbConnect.on('error', () => {
-    console.log(console, 'connection error')
-});
+    //validateLogin returns whether profile exists, and the profile's parameters.
+    [profile, exists] = await database.validateLogin(req.body.username, req.body.password);
+    
+    if(exists) {
+        console.log(profile);
+        res.send(profile);
+    }
+    else{
+        console.log('not found');
+        res.send('does not exist');
+    }
 
-//logs success message when connection successful
-dbConnect.on('open', () => {
-    console.log('connection to database successful. Awaiting API calls')
 });
 
 //when API receives form info to 'createAccount' endpoint, a new profile is created in the database for it. it is logged in the console
 app.post('/createAccount', async(req, res) => {
-    const accounts = await account.create ({
+    const accounts = await database.account.create ({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         profileID: req.body.profileID,
@@ -48,17 +43,10 @@ app.post('/createAccount', async(req, res) => {
     res.end();
 });
 
-//when a username and password is sent via form data to the 'login' endpoint, the database is queried for the associated account
-//profile info is sent to the card game application to be displayed, modified, etc 
-app.post('/login', async (req, res) => {
-
-    const profile = await account.findOne({username: req.body.username, password: req.body.password}).exec();
-        console.log('found account:');
-        console.log(profile);
-   
-        res.send(profile);
-    });
-
-app.listen(8000, (err) => {
-    (err) ? console.log('error spinning up server') : console.log('waiting for requests on port 8000');
-})
+app.post('/deleteAccount', async(req, res) => {
+    const toDelete = await account.findOne({username: req.body.username, password: req.body.password}).exec();
+    await account.deleteOne({username: req.body.username, password: req.body.password}).exec();
+        console.log("following profile deleted:");
+        console.log(toDelete);
+        res.send("deleted");
+});
